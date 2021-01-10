@@ -1,25 +1,27 @@
 <?php
 
+namespace Tests;
+
 use Meng\Soap\HttpBinding\HttpBinding;
 use Meng\Soap\HttpBinding\RequestBuilder;
 use Meng\Soap\HttpBinding\RequestException;
 use Meng\Soap\Interpreter;
+use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\RequestInterface;
 use Zend\Diactoros\Response;
 use Zend\Diactoros\Stream;
 
-class HttpBindingTest extends PHPUnit_Framework_TestCase
+class HttpBindingTest extends TestCase
 {
-    /**
-     * @test
-     */
-    public function soap11()
+    /** @test */
+    public function soap11(): void
     {
         $interpreter = new Interpreter('http://www.webservicex.net/airport.asmx?WSDL', ['soap_version' => SOAP_1_1]);
         $builder = new RequestBuilder();
         $httpBinding = new HttpBinding($interpreter, $builder);
 
         $request = $httpBinding->request('GetAirportInformationByCountry', [['country' => 'United Kingdom']]);
-        $this->assertTrue($request instanceof \Psr\Http\Message\RequestInterface);
+        self::assertInstanceOf(RequestInterface::class, $request);
 
         $response = <<<EOD
 <?xml version="1.0" encoding="utf-8"?>
@@ -37,20 +39,18 @@ EOD;
         $stream->rewind();
         $response = new Response($stream, 200, ['Content-Type' => 'text/xml; charset=utf-8']);
         $response = $httpBinding->response($response, 'GetAirportInformationByCountry');
-        $this->assertObjectHasAttribute('GetAirportInformationByCountryResult', $response);
+        self::assertObjectHasAttribute('GetAirportInformationByCountryResult', $response);
     }
 
-    /**
-     * @test
-     */
-    public function soap12()
+    /** @test */
+    public function soap12(): void
     {
         $interpreter = new Interpreter('http://www.webservicex.net/uszip.asmx?WSDL', ['soap_version' => SOAP_1_2]);
         $builder = new RequestBuilder();
         $httpBinding = new HttpBinding($interpreter, $builder);
 
         $request = $httpBinding->request('GetInfoByCity', [['USCity' => 'New York']]);
-        $this->assertTrue($request instanceof \Psr\Http\Message\RequestInterface);
+        self::assertInstanceOf(RequestInterface::class, $request);
 
         $response = <<<EOD
 <?xml version="1.0" encoding="utf-8"?>
@@ -68,18 +68,15 @@ EOD;
         $stream->rewind();
         $response = new Response($stream, 200, ['Content-Type' => 'Content-Type: application/soap+xml; charset=utf-8']);
         $response = $httpBinding->response($response, 'GetInfoByCity');
-        $this->assertObjectHasAttribute('GetInfoByCityResult', $response);
+        self::assertObjectHasAttribute('GetInfoByCityResult', $response);
     }
 
-    /**
-     * @test
-     * @expectedException Meng\Soap\HttpBinding\RequestException
-     */
-    public function requestBindingFailed()
+    /** @test */
+    public function requestBindingFailed(): void
     {
+        $this->expectException(RequestException::class);
         $interpreter = new Interpreter(null, ['uri' => '', 'location' => '']);
-        $builderMock = $this->getMockBuilder('Meng\Soap\HttpBinding\RequestBuilder')
-            ->setMethods(['getSoapHttpRequest'])
+        $builderMock = $this->getMockBuilder(RequestBuilder::class)
             ->getMock();
         $builderMock->method('getSoapHttpRequest')->willThrowException(new RequestException());
 
